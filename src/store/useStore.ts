@@ -1,35 +1,42 @@
-import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { createUserSlice, type UserSlice } from './slices/userSlice';
+import { createProjectSlice, type ProjectSlice } from './slices/projectSlice';
+import { createMessageSlice, type MessageSlice } from './slices/messageSlice';
 
-interface CounterSlice {
-  count: number
-  increment: () => void
-  decrement: () => void
-  reset: () => void
-}
-
-interface UserSlice {
-  username: string | null
-  setUsername: (username: string) => void
-  logout: () => void
-}
-
-interface Store extends CounterSlice, UserSlice {}
-
-export const useStore = create<Store>()(
-  devtools(
-    (set) => ({
-      // Counter slice
-      count: 0,
-      increment: () => set((state) => ({ count: state.count + 1 })),
-      decrement: () => set((state) => ({ count: state.count - 1 })),
-      reset: () => set({ count: 0 }),
-
-      // User slice
-      username: null,
-      setUsername: (username) => set({ username }),
-      logout: () => set({ username: null }),
-    }),
-    { name: 'app-store' }
+export const useStore = create<UserSlice & ProjectSlice & MessageSlice>()(
+  persist(
+    (...a) => {
+      const userSlice = createUserSlice(...a);
+      return {
+        ...userSlice,
+        ...createProjectSlice(...a),
+        ...createMessageSlice(...a),
+        projects: [
+          {
+            id: '1',
+            title: 'E-commerce Platform',
+            description: 'Building a modern e-commerce platform with React and Node.js',
+            owner: userSlice.users[0],
+            skills: ['React', 'Node.js', 'MongoDB', 'TypeScript'],
+            collaborators: [userSlice.users[0]],
+            applications: [],
+            maxCollaborators: 4,
+            status: 'open',
+            visibility: 'public',
+          },
+        ],
+      };
+    },
+    {
+      name: 'wechieve-storage',
+      partialize: (state) => ({
+        currentUser: state.currentUser,
+        users: state.users,
+        projects: state.projects,
+        messages: state.messages,
+        conversations: state.conversations,
+      }),
+    }
   )
-) 
+);
